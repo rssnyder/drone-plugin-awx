@@ -1,6 +1,6 @@
 # drone-plugin-awx
 
-triggers awx jobs from drone
+triggers awx jobs from harness
 
 ## settings
 
@@ -17,3 +17,22 @@ triggers awx jobs from drone
 - `ORGANIZATION` - (optional) awx organization for dynamic inventory (int)
 - `JOB_TEMPLATE_ID` - (optional) job template id (int)
 - `EXTRA_VARS` - (optional) extra vars for job (json string)
+
+## usage
+
+```yaml
+- step:
+    type: Plugin
+    name: awx
+    identifier: awx
+    spec:
+        connectorRef: account.buildfarm_container_registry_cloud
+        image: harnesscommunity/drone-plugin-awx
+        settings:
+            endpoint: http://awx.r.ss
+            username: admin
+            password: <+secrets.getValue("lab")>
+            save_token: "true"
+            target_hostname: home.r.ss
+            job_template_id: "7"
+```
