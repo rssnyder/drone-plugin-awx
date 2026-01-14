@@ -230,7 +230,7 @@ def main():
 
     # job settings
     job_template_id = check_env("PLUGIN_JOB_TEMPLATE_ID", "")
-    extra_vars = check_env("PLUGIN_EXTRA_VARS", "{}")
+    extra_vars = loads(check_env("PLUGIN_EXTRA_VARS", "{}"))
 
     outputs = {}
 
@@ -298,7 +298,7 @@ def main():
             endpoint,
             job_template_id,
             inventory_id,
-            loads(extra_vars),
+            extra_vars,
         )
         outputs["JOB_ID"] = job_id
 
