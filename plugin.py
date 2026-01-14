@@ -1,9 +1,9 @@
 from os import getenv
-import stat
 from sys import exit
 from json import loads
 from venv import logger
 import logging
+from time import sleep
 
 from requests import get, post
 
@@ -192,6 +192,7 @@ def wait_for_job_completion(token: str, endpoint: str, job_id: int):
 
     status = None
     while status in [None, "pending", "waiting", "running"]:
+        sleep(5)
         resp = get(
             f"{endpoint}/api/v2/jobs/{job_id}/",
             headers={"Authorization": f"Bearer {token}"},
@@ -204,7 +205,7 @@ def wait_for_job_completion(token: str, endpoint: str, job_id: int):
             raise e
 
         status = resp.json()["status"]
-        logging.debug(f"Job running with status: {status}")
+        logging.info(f"Job running with status: {status}")
 
     return status
 
@@ -277,20 +278,19 @@ def main():
                     hostname,
                     target_description,
                 )
-                logging.info(f"Added host to inventory {inventory_id}: {target_hostname}")
+                logging.info(f"Added host to inventory {inventory_id}: {hostname}")
 
         elif add_to_inventory:
             # add target host to existing inventory
-            add_host_to_inventory(
-                token,
-                endpoint,
-                inventory_id,
-                target_hostname,
-                target_description,
-            )
-            logging.info(
-                f"Added host to existing inventory {inventory_id}: {target_hostname}"
-            )
+            for hostname in target_hostnames:
+                add_host_to_inventory(
+                    token,
+                    endpoint,
+                    inventory_id,
+                    hostname,
+                    target_description,
+                )
+                logging.info(f"Added host to inventory {inventory_id}: {hostname}")
 
         # trigger job
         job_id = trigger_job(
