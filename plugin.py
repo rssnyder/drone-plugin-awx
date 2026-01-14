@@ -304,7 +304,7 @@ def main():
             job_id,
         )
         outputs["JOB_STATUS"] = status
-        outputs["JOB_URL"] = f"{endpoint}/\#/jobs/playbook/{job_id}/output"
+        outputs["JOB_URL"] = f"'{endpoint}/#/jobs/playbook/{job_id}/output'"
 
         logger.info(f"Job completed with status: {status}")
 
