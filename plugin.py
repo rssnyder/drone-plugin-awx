@@ -223,6 +223,7 @@ def main():
 
     # target host settings
     target_hostname = check_env("PLUGIN_TARGET_HOSTNAME", "")
+    target_hostnames = loads(check_env("PLUGIN_TARGET_HOSTNAMES", "[]"))
     target_description = check_env("PLUGIN_TARGET_DESC", "created by harness")
     add_to_inventory = check_env("PLUGIN_ADD_TO_INVENTORY", "")
 
@@ -241,9 +242,12 @@ def main():
         logging.info(f"Job requested: {job_template_id}")
 
         # hostname must be provided at minimum
-        if not target_hostname:
-            logging.error("No target hostname provided")
+        if not (target_hostname or target_hostnames):
+            logging.error("No target hostnames provided")
             return
+
+        if target_hostname:
+            target_hostnames.append(target_hostname)
 
         # if no inventory ID is provided, create one
         if not inventory_id:
@@ -257,7 +261,7 @@ def main():
             inventory_id = create_inventory(
                 token,
                 endpoint,
-                inventory_name or target_hostname,
+                inventory_name or target_hostname or target_hostnames[0],
                 inventory_description,
                 organization,
             )
@@ -265,14 +269,15 @@ def main():
             logging.info(f"Created inventory with ID: {inventory_id}")
 
             # add target host to inventory
-            add_host_to_inventory(
-                token,
-                endpoint,
-                inventory_id,
-                target_hostname,
-                target_description,
-            )
-            logging.info(f"Added host to inventory {inventory_id}: {target_hostname}")
+            for hostname in target_hostnames:
+                add_host_to_inventory(
+                    token,
+                    endpoint,
+                    inventory_id,
+                    hostname,
+                    target_description,
+                )
+                logging.info(f"Added host to inventory {inventory_id}: {target_hostname}")
 
         elif add_to_inventory:
             # add target host to existing inventory
