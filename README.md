@@ -36,3 +36,5 @@ triggers awx jobs from harness
             target_hostname: home.r.ss
             job_template_id: "7"
 ```
+<img width="1090" height="326" alt="image" src="https://github.com/user-attachments/assets/4d33b0b9-7063-4525-83d7-8bcf4d381b13" />
+<img width="878" height="370" alt="image" src="https://github.com/user-attachments/assets/d6b65658-3656-47d8-a4a9-b628f860d4f7" />
