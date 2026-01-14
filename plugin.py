@@ -219,7 +219,7 @@ def main():
     inventory_id = check_env("PLUGIN_INVENTORY_ID", "")
     inventory_name = check_env("PLUGIN_INVENTORY_NAME", "")
     inventory_description = check_env("PLUGIN_INVENTORY_DESC", "created by harness")
-    organization = int(check_env("PLUGIN_ORGANIZATION", ""))
+    organization = int(check_env("PLUGIN_ORGANIZATION_ID", "1"))
 
     # target host settings
     target_hostname = check_env("PLUGIN_TARGET_HOSTNAME", "")
@@ -304,6 +304,7 @@ def main():
             job_id,
         )
         outputs["JOB_STATUS"] = status
+        outputs["JOB_URL"] = f"{endpoint}/#/jobs/playbook/{job_id}/output"
 
         logger.info(f"Job completed with status: {status}")
 

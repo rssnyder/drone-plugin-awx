@@ -14,9 +14,17 @@ triggers awx jobs from harness
 - `INVENTORY_ID` - (optional) inventory id, if not provided, will be created dynamically (int)
 - `INVENTORY_NAME` - (optional) inventory name for dynamic inventory (str)
 - `INVENTORY_DESC` - (optional) inventory description for dynamic inventory (str)
-- `ORGANIZATION` - (optional) awx organization for dynamic inventory (int)
+- `ORGANIZATION_ID` - (optional) awx organization for dynamic inventory (int: default 1)
 - `JOB_TEMPLATE_ID` - (optional) job template id (int)
 - `EXTRA_VARS` - (optional) extra vars for job (json string)
+
+## outputs
+
+- `AWX_TOKEN` - awx token (str: if `SAVE_TOKEN` is true)
+- `INVENTORY_ID` - inventory id (int: if inventory is created)
+- `JOB_ID` - job id (int: if job is triggered)
+- `JOB_STATUS` - job status (str: if job is triggered)
+- `JOB_URL` - job url (str: if job is triggered)
 
 ## usage
 
