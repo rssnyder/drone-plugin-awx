@@ -119,7 +119,12 @@ def create_inventory(
 
 
 def add_host_to_inventory(
-    token: str, endpoint: str, inventory_id: int, name: str, description: str
+    token: str,
+    endpoint: str,
+    inventory_id: int,
+    name: str,
+    description: str,
+    ignore_existing: bool = False,
 ):
     """
     add a host to an inventory in awx
@@ -143,6 +148,11 @@ def add_host_to_inventory(
     try:
         resp.raise_for_status()
     except Exception as e:
+        if (
+            "Host with this Name and Inventory already exists." in resp.text
+        ) and ignore_existing:
+            return
+
         logging.error(resp.status_code, resp.text)
         raise e
 
@@ -227,6 +237,7 @@ def main():
     target_hostnames = loads(check_env("PLUGIN_TARGET_HOSTNAMES", "[]"))
     target_description = check_env("PLUGIN_TARGET_DESC", "created by harness")
     add_to_inventory = check_env("PLUGIN_ADD_TO_INVENTORY", "")
+    ignore_existing_host = check_env("PLUGIN_IGNORE_EXISTING_HOST", "")
 
     # job settings
     job_template_id = check_env("PLUGIN_JOB_TEMPLATE_ID", "")
@@ -289,6 +300,7 @@ def main():
                     inventory_id,
                     hostname,
                     target_description,
+                    ignore_existing=ignore_existing_host,
                 )
                 logging.info(f"Added host to inventory {inventory_id}: {hostname}")
 
