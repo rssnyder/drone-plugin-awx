@@ -83,7 +83,7 @@ def get_token(username: str, password: str, endpoint: str):
     try:
         resp.raise_for_status()
     except Exception as e:
-        logging.error(resp.text)
+        logging.error(resp.status_code, resp.text)
         raise e
     return resp.json()["token"]
 
@@ -113,7 +113,7 @@ def create_inventory(
     try:
         resp.raise_for_status()
     except Exception as e:
-        logging.error(resp.text)
+        logging.error(resp.status_code, resp.text)
         raise e
     return resp.json()["id"]
 
@@ -143,7 +143,7 @@ def add_host_to_inventory(
     try:
         resp.raise_for_status()
     except Exception as e:
-        logging.error(resp.text)
+        logging.error(resp.status_code, resp.text)
         raise e
 
 
@@ -172,7 +172,7 @@ def trigger_job(
     try:
         resp.raise_for_status()
     except Exception as e:
-        logging.error(resp.text)
+        logging.error(resp.status_code, resp.text)
         raise e
     return resp.json()["id"]
 
@@ -201,7 +201,7 @@ def wait_for_job_completion(token: str, endpoint: str, job_id: int):
         try:
             resp.raise_for_status()
         except Exception as e:
-            logging.error(resp.text)
+            logging.error(resp.status_code, resp.text)
             raise e
 
         status = resp.json()["status"]
