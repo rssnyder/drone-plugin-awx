@@ -158,7 +158,12 @@ def add_host_to_inventory(
 
 
 def trigger_job(
-    token: str, endpoint: str, job_template_id: int, inventory_id: int, extra_vars: dict
+    token: str,
+    endpoint: str,
+    job_template_id: int,
+    inventory_id: int,
+    extra_vars: dict,
+    limit: str = None,
 ):
     """
     trigger a job in awx
@@ -169,14 +174,19 @@ def trigger_job(
         job_template_id (int): id of the job template to use
         inventory_id (int): id of the inventory to use
         extra_vars (dict): extra variables to pass to the job
+        limit (str): limit pattern for the job execution
 
     returns:
         int: the id of the job
     """
+    payload = {"inventory": inventory_id, "extra_vars": extra_vars}
+    if limit:
+        payload["limit"] = limit
+
     resp = post(
         f"{endpoint}/api/v2/job_templates/{job_template_id}/launch/",
         headers={"Authorization": f"Bearer {token}"},
-        json={"inventory": inventory_id, "extra_vars": extra_vars},
+        json=payload,
     )
 
     try:
@@ -242,6 +252,7 @@ def main():
     # job settings
     job_template_id = check_env("PLUGIN_JOB_TEMPLATE_ID", "")
     extra_vars = loads(check_env("PLUGIN_EXTRA_VARS", "{}"))
+    limit = check_env("PLUGIN_LIMIT", "")
 
     outputs = {}
 
@@ -311,6 +322,7 @@ def main():
             job_template_id,
             inventory_id,
             extra_vars,
+            limit,
         )
         outputs["JOB_ID"] = job_id
 

@@ -18,6 +18,7 @@ triggers awx jobs from harness
 - `ORGANIZATION_ID` - (optional) awx organization for dynamic inventory (int: default 1)
 - `JOB_TEMPLATE_ID` - (optional) job template id (int)
 - `EXTRA_VARS` - (optional) extra vars for job (json string)
+- `LIMIT` - (optional) limit pattern for job execution (str)
 
 ## outputs
 
