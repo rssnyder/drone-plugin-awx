@@ -66,7 +66,7 @@ def check_env(variable: str, default: str = None):
     return value
 
 
-def get_token(username: str, password: str, endpoint: str):
+def get_token(username: str, password: str, endpoint: str, api_path: str):
     """
     get a token from awx
 
@@ -74,11 +74,12 @@ def get_token(username: str, password: str, endpoint: str):
         username (str): username to use for authentication
         password (str): password to use for authentication
         endpoint (str): endpoint to use for authentication
+        api_path (str): api base path (e.g. api/v2 or api/controller/v2)
 
     returns:
         str: the token
     """
-    resp = post(f"{endpoint}/api/v2/tokens/", auth=(username, password))
+    resp = post(f"{endpoint}/{api_path}/tokens/", auth=(username, password))
 
     try:
         resp.raise_for_status()
@@ -89,7 +90,12 @@ def get_token(username: str, password: str, endpoint: str):
 
 
 def create_inventory(
-    token: str, endpoint: str, name: str, description: str, organization: int
+    token: str,
+    endpoint: str,
+    api_path: str,
+    name: str,
+    description: str,
+    organization: int,
 ):
     """
     create an inventory in awx
@@ -97,6 +103,7 @@ def create_inventory(
     args:
         token (str): token to use for authentication
         endpoint (str): endpoint to use for authentication
+        api_path (str): api base path (e.g. api/v2 or api/controller/v2)
         name (str): name of the inventory
         description (str): description of the inventory
         organization (int): organization to use for the inventory
@@ -105,7 +112,7 @@ def create_inventory(
         int: the id of the inventory
     """
     resp = post(
-        f"{endpoint}/api/v2/inventories/",
+        f"{endpoint}/{api_path}/inventories/",
         headers={"Authorization": f"Bearer {token}"},
         json={"name": name, "description": description, "organization": organization},
     )
@@ -121,6 +128,7 @@ def create_inventory(
 def add_host_to_inventory(
     token: str,
     endpoint: str,
+    api_path: str,
     inventory_id: int,
     name: str,
     description: str,
@@ -132,6 +140,7 @@ def add_host_to_inventory(
     args:
         token (str): token to use for authentication
         endpoint (str): endpoint to use for authentication
+        api_path (str): api base path (e.g. api/v2 or api/controller/v2)
         inventory_id (int): id of the inventory to add the host to
         name (str): name of the host
         description (str): description of the host
@@ -140,7 +149,7 @@ def add_host_to_inventory(
         None
     """
     resp = post(
-        f"{endpoint}/api/v2/inventories/{inventory_id}/hosts/",
+        f"{endpoint}/{api_path}/inventories/{inventory_id}/hosts/",
         headers={"Authorization": f"Bearer {token}"},
         json={"name": name, "description": description},
     )
@@ -160,6 +169,7 @@ def add_host_to_inventory(
 def trigger_job(
     token: str,
     endpoint: str,
+    api_path: str,
     job_template_id: int,
     inventory_id: int,
     extra_vars: dict,
@@ -171,6 +181,7 @@ def trigger_job(
     args:
         token (str): token to use for authentication
         endpoint (str): endpoint to use for authentication
+        api_path (str): api base path (e.g. api/v2 or api/controller/v2)
         job_template_id (int): id of the job template to use
         inventory_id (int): id of the inventory to use
         extra_vars (dict): extra variables to pass to the job
@@ -184,7 +195,7 @@ def trigger_job(
         payload["limit"] = limit
 
     resp = post(
-        f"{endpoint}/api/v2/job_templates/{job_template_id}/launch/",
+        f"{endpoint}/{api_path}/job_templates/{job_template_id}/launch/",
         headers={"Authorization": f"Bearer {token}"},
         json=payload,
     )
@@ -197,13 +208,14 @@ def trigger_job(
     return resp.json()["id"]
 
 
-def wait_for_job_completion(token: str, endpoint: str, job_id: int):
+def wait_for_job_completion(token: str, endpoint: str, api_path: str, job_id: int):
     """
     wait for a job to complete in awx
 
     args:
         token (str): token to use for authentication
         endpoint (str): endpoint to use for authentication
+        api_path (str): api base path (e.g. api/v2 or api/controller/v2)
         job_id (int): id of the job to wait for
 
     returns:
@@ -214,7 +226,7 @@ def wait_for_job_completion(token: str, endpoint: str, job_id: int):
     while status in [None, "pending", "waiting", "running"]:
         sleep(5)
         resp = get(
-            f"{endpoint}/api/v2/jobs/{job_id}/",
+            f"{endpoint}/{api_path}/jobs/{job_id}/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -231,10 +243,19 @@ def wait_for_job_completion(token: str, endpoint: str, job_id: int):
 
 
 def main():
-    endpoint = check_env("PLUGIN_ENDPOINT")
-    username = check_env("PLUGIN_USERNAME")
-    password = check_env("PLUGIN_PASSWORD")
+    endpoint = check_env("PLUGIN_ENDPOINT").rstrip("/")
     save_token = check_env("PLUGIN_SAVE_TOKEN", "")
+
+    # api base path, strip surrounding slashes so it slots cleanly between
+    # the endpoint and the resource. defaults to the legacy awx layout;
+    # newer aap platform gateway deployments use "api/controller/v2"
+    api_path = check_env("PLUGIN_API_PATH", "api/v2").strip("/")
+
+    # authentication: an existing oauth/personal access token takes priority
+    # over username/password, which lets aap users skip the /tokens/ endpoint
+    token = check_env("PLUGIN_TOKEN", "")
+    username = check_env("PLUGIN_USERNAME", "")
+    password = check_env("PLUGIN_PASSWORD", "")
 
     # inventory settings
     inventory_id = check_env("PLUGIN_INVENTORY_ID", "")
@@ -256,9 +277,13 @@ def main():
 
     outputs = {}
 
-    token = get_token(username, password, endpoint)
-    if save_token:
-        write_secret_outputs({"AWX_TOKEN": token})
+    if not token:
+        if not (username and password):
+            logging.error("either TOKEN or USERNAME and PASSWORD must be provided")
+            exit(1)
+        token = get_token(username, password, endpoint, api_path)
+        if save_token:
+            write_secret_outputs({"AWX_TOKEN": token})
 
     # if job template is passed, trigger it
     if job_template_id:
@@ -284,6 +309,7 @@ def main():
             inventory_id = create_inventory(
                 token,
                 endpoint,
+                api_path,
                 inventory_name or target_hostname or target_hostnames[0],
                 inventory_description,
                 organization,
@@ -296,6 +322,7 @@ def main():
                 add_host_to_inventory(
                     token,
                     endpoint,
+                    api_path,
                     inventory_id,
                     hostname,
                     target_description,
@@ -308,6 +335,7 @@ def main():
                 add_host_to_inventory(
                     token,
                     endpoint,
+                    api_path,
                     inventory_id,
                     hostname,
                     target_description,
@@ -319,6 +347,7 @@ def main():
         job_id = trigger_job(
             token,
             endpoint,
+            api_path,
             job_template_id,
             inventory_id,
             extra_vars,
@@ -330,6 +359,7 @@ def main():
         status = wait_for_job_completion(
             token,
             endpoint,
+            api_path,
             job_id,
         )
         outputs["JOB_STATUS"] = status
