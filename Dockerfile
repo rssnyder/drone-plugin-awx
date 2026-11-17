@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM python:3.15-slim
 
 ADD plugin.py requirements.txt /usr/local/bin/
 
